@@ -8,9 +8,16 @@ import (
 	"strings"
 	"strconv"
 	"regexp"
+	"flag"
 )
 
 func main() {
+	is_without_header := flag.Bool("without-header", false, "Output without header line.")
+	is_without_chr_pos := flag.Bool("without-chr-pos", false, "Output without CHROM and POS.")
+	is_rs_id_as_int := flag.Bool("rs-id-as-int", false, "Output rs ID as integer.")
+	is_genotype_as_pg_array := flag.Bool("genotype-as-pg-array", false, "Output genotype as PostgreSQL array. E.g., '{G,G}'")
+	flag.Parse()
+
 	scanner := bufio.NewScanner(os.Stdin)
 
 	for scanner.Scan() {
@@ -19,15 +26,23 @@ func main() {
 		if strings.HasPrefix(line, "##") {
 			continue
 		} else if strings.HasPrefix(line, "#CHROM") {
-			fields := strings.Split(line, "\t")
-			fmt.Print("#CHROM\tPOS\tID\tREF\t")
-			fmt.Println(strings.Join(fields[9:], "\t"))
+			if ! *is_without_header {
+				fields := strings.Split(line, "\t")
+				if ! *is_without_chr_pos {
+					fmt.Print("#CHROM\tPOS\tID\t")
+				} else {
+					fmt.Print("ID\t")
+				}
+				fmt.Println(strings.Join(fields[9:], "\t"))
+			}
 			break
 		}
 	}
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
+
+	pattern := regexp.MustCompile(`rs(\d+)`)
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -36,6 +51,14 @@ func main() {
 		chrom := records[0]
 		pos := records[1]
 		id := records[2]
+
+		if *is_rs_id_as_int {
+			id_found := pattern.FindStringSubmatch(records[2])
+			if id_found  != nil {
+				id = id_found[1]
+			}
+		}
+
 		ref := records[3]
 		alt := strings.Split(records[4], ",")
 		format := strings.Split(records[8], ":")
@@ -44,19 +67,28 @@ func main() {
 		genotypes := []string{}
 
 		for i := range gts {
-			var genotype string
-
 			gt := strings.Split(gts[i], ":")
 
 			for j := range gt {
+				var genotype string
 				if format[j] == "GT" {
-					genotype = strings.Join(gt2genotype(ref, alt, gt[j]), "/")
+					_gt := gt2genotype(ref, alt, gt[j])
+					if *is_genotype_as_pg_array {
+						genotype = "{" + strings.Join(_gt, ",") + "}"
+					} else {
+						genotype = strings.Join(_gt, "/")
+					}
+					genotypes = append(genotypes, genotype)
 				}
 			}
-			genotypes = append(genotypes, genotype)
 		}
 
-		result := []string{chrom, pos, id, ref}
+		result := []string{}
+		if ! *is_without_chr_pos {
+			result = []string{chrom, pos, id}
+		} else {
+			result = []string{id}
+		}
 		result = append(result, genotypes...)
 		fmt.Println(strings.Join(result, "\t"))
 	}
