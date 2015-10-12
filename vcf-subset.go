@@ -75,9 +75,20 @@ func main() {
 				}
 			}
 		}
+
+		if len(keep_idxs) == 0 {
+			fmt.Println()
+			log.Fatal("No sample IDs matched.")
+		}
+
 	} else if *arg_keep_index != "" {
 		// An index of sample ID field to be kept. E.g., to keep 1st sample, set: 0
 		_keep_idx, _  := strconv.Atoi(*arg_keep_index)
+
+		if _keep_idx > len(sample_ids) {
+			fmt.Println()
+			log.Fatal("No sample IDs matched.")
+		}
 		keep_idxs = append(keep_idxs, _keep_idx)
 	}
 
