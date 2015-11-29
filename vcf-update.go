@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"io"
 	"bufio"
 	"strings"
 	"regexp"
 	"strconv"
 	"compress/gzip"
+	"github.com/knmkr/go-vcf-tools/lib"
 )
 
 func main() {
@@ -58,39 +60,42 @@ func main() {
 	// Get merge mappings of rs IDs
 	rsHigh2current := make(map[int]int)
 
-	scanner := bufio.NewScanner(gz)
-	for scanner.Scan() {
-		line := scanner.Text()
-		records := strings.Split(line, "\t")
+	map_reader := bufio.NewReaderSize(gz, 128 * 1024)
+	map_line, err := lib.Readln(map_reader)
+	for err == nil {
+		records := strings.Split(map_line, "\t")
 		rsHigh, _  := strconv.Atoi(records[0])
 		rsCurrent, _  := strconv.Atoi(records[6])
 		rsHigh2current[rsHigh] = rsCurrent
+
+		map_line, err = lib.Readln(map_reader)
 	}
-	if err := scanner.Err(); err != nil {
+	if err != nil && err != io.EOF {
 		log.Fatal(err)
 	}
 
 	// Parse header lines
-	scanner = bufio.NewScanner(os.Stdin)
+	reader := bufio.NewReaderSize(os.Stdin, 128 * 1024)
 
-	for scanner.Scan() {
-		line := scanner.Text()
-
+	line, err := lib.Readln(reader)
+	for err == nil {
 		if strings.HasPrefix(line, "##") {
 			fmt.Println(line)
 		} else if strings.HasPrefix(line, "#CHROM") {
 			fmt.Println(line)
 			break
 		}
+
+		line, err = lib.Readln(reader)
 	}
-	if err := scanner.Err(); err != nil {
+	if err != nil && err != io.EOF {
 		log.Fatal(err)
 	}
 
 	pattern := regexp.MustCompile(`rs(\d+)`)
 
-	for scanner.Scan() {
-		line := scanner.Text()
+	line, err = lib.Readln(reader)
+	for err == nil {
 		records := strings.Split(line, "\t")
 
 		// Update rs ID
@@ -114,8 +119,10 @@ func main() {
 		result = append(result, id_updated_str)
 		result = append(result, records[3:]...)
 		fmt.Println(strings.Join(result, "\t"))
+
+		line, err = lib.Readln(reader)
 	}
-	if err := scanner.Err(); err != nil {
+	if err != nil && err != io.EOF {
 		log.Fatal(err)
 	}
 }
