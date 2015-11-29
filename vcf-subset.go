@@ -8,6 +8,7 @@ import (
 	"strings"
 	"flag"
 	"strconv"
+	"github.com/knmkr/go-vcf-tools/lib"
 )
 
 func main() {
@@ -23,13 +24,13 @@ func main() {
 		os.Exit(0)
 	}
 
-	scanner := bufio.NewScanner(os.Stdin)
+	reader := bufio.NewReaderSize(os.Stdin, 128 * 1024)
 
 	// Parse header lines
 	var sample_ids []string
-	for scanner.Scan() {
-		line := scanner.Text()
 
+	line, err := lib.Readln(reader)
+	for err == nil {
 		if strings.HasPrefix(line, "##") {
 			fmt.Println(line)
 		} else if strings.HasPrefix(line, "#CHROM") {
@@ -39,9 +40,8 @@ func main() {
 			sample_ids = fields[9:]
 			break
 		}
-	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
+
+		line, err = lib.Readln(reader)
 	}
 
 	// Get indices of sample IDs to be kept
@@ -54,16 +54,17 @@ func main() {
 			keep_ids = append(keep_ids, *arg_keep_id)
 		} else {
 			// Path to a file of sample IDs to be kept. Each line contains one sample ID.
-			f, err := os.Open(*arg_keep_ids)
+			fp, err := os.Open(*arg_keep_ids)
 			if err != nil {
 				panic(err)
 			}
-			defer f.Close()
+			defer fp.Close()
 
-			scanner := bufio.NewScanner(f)
-			for scanner.Scan() {
-				line := scanner.Text()
-				keep_ids = append(keep_ids, line)
+			ids_reader := bufio.NewReaderSize(fp, 128 * 1024)
+			ids_line, err := lib.Readln(ids_reader)
+			for err == nil {
+				keep_ids = append(keep_ids, ids_line)
+			 	ids_line, err = lib.Readln(ids_reader)
 			}
 		}
 
@@ -94,17 +95,16 @@ func main() {
 
 	fmt.Println(strings.Join(subset(sample_ids, keep_idxs), "\t"))
 
-	for scanner.Scan() {
-		line := scanner.Text()
+	line, err = lib.Readln(reader)
+	for err == nil {
 		records := strings.Split(line, "\t")
 
 		result := []string{}
 		result = append(result, records[0:9]...)
 		result = append(result, subset(records[9:], keep_idxs)...)
 		fmt.Println(strings.Join(result, "\t"))
-	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
+
+		line, err = lib.Readln(reader)
 	}
 }
 
