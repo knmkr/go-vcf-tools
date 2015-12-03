@@ -2,6 +2,7 @@ package lib
 
 import (
 	"bufio"
+	"errors"
 )
 
 
@@ -23,10 +24,17 @@ func Readln(r *bufio.Reader) (string, error) {
 	var (isPrefix bool = true
 		err error = nil
 		line, ln []byte
+		num_buffer_count = 0
 	)
 	for isPrefix && err == nil {
 		line, isPrefix, err = r.ReadLine()
 		ln = append(ln, line...)
+
+		num_buffer_count += 1
+		if num_buffer_count > 10 {
+			err = errors.New("too long line")
+			break
+		}
 	}
 	return string(ln), err
 }

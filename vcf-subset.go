@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"io"
 	"bufio"
 	"strings"
 	"flag"
@@ -24,7 +25,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	reader := bufio.NewReaderSize(os.Stdin, 128 * 1024)
+	reader := bufio.NewReaderSize(os.Stdin, 64 * 1024)
 
 	// Parse header lines
 	var sample_ids []string
@@ -42,6 +43,9 @@ func main() {
 		}
 
 		line, err = lib.Readln(reader)
+	}
+	if err != nil && err != io.EOF {
+		panic(err)
 	}
 
 	// Get indices of sample IDs to be kept
@@ -65,6 +69,9 @@ func main() {
 			for err == nil {
 				keep_ids = append(keep_ids, ids_line)
 			 	ids_line, err = lib.Readln(ids_reader)
+			}
+			if err != nil && err != io.EOF {
+				panic(err)
 			}
 		}
 
@@ -105,6 +112,9 @@ func main() {
 		fmt.Println(strings.Join(result, "\t"))
 
 		line, err = lib.Readln(reader)
+	}
+	if err != nil && err != io.EOF {
+		panic(err)
 	}
 }
 
