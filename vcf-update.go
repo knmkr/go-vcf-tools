@@ -1,13 +1,13 @@
 package main
 
 import (
-	"fmt"
-	"log"
 	"os"
 	"io"
+	"fmt"
 	"bufio"
 	"strings"
 	"regexp"
+	"errors"
 	"strconv"
 	"compress/gzip"
 	"github.com/knmkr/go-vcf-tools/lib"
@@ -71,7 +71,7 @@ func main() {
 		map_line, err = lib.Readln(map_reader)
 	}
 	if err != nil && err != io.EOF {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	// Parse header lines
@@ -84,12 +84,15 @@ func main() {
 		} else if strings.HasPrefix(line, "#CHROM") {
 			fmt.Println(line)
 			break
+		} else {
+			err = errors.New("Invalid VCF header")
+			break
 		}
 
 		line, err = lib.Readln(reader)
 	}
 	if err != nil && err != io.EOF {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	pattern := regexp.MustCompile(`rs(\d+)`)
@@ -123,6 +126,6 @@ func main() {
 		line, err = lib.Readln(reader)
 	}
 	if err != nil && err != io.EOF {
-		log.Fatal(err)
+		panic(err)
 	}
 }

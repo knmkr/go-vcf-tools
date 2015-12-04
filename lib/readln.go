@@ -8,6 +8,8 @@ import (
 
 func Readln(r *bufio.Reader) (string, error) {
 	// http://stackoverflow.com/a/12206584
+	// http://stackoverflow.com/a/21124415
+	// http://stackoverflow.com/a/16615559
 	//
 	// Example:
 	//
