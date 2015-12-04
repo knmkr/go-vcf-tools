@@ -1,13 +1,15 @@
 package main
 
 import (
-	"fmt"
-	"log"
 	"os"
+	"io"
+	"fmt"
 	"bufio"
-	"strings"
 	"regexp"
+	"errors"
 	"strconv"
+	"strings"
+	"github.com/knmkr/go-vcf-tools/lib"
 )
 
 func main() {
@@ -30,38 +32,45 @@ func main() {
 
 	keep_ids := make(map[int]bool)
 
-	scanner := bufio.NewScanner(fp)
-	for scanner.Scan() {
-		line := scanner.Text()
-		id_found := pattern.FindStringSubmatch(line)
+	ids_reader := bufio.NewReaderSize(fp, 128 * 1024)
+	ids_line, err := lib.Readln(ids_reader)
+	for err == nil {
+		id_found := pattern.FindStringSubmatch(ids_line)
 		if id_found != nil {
 			keep_id, _ := strconv.Atoi(id_found[1])
 			keep_ids[keep_id] = true
 		}
-	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
-	}
 
-	scanner = bufio.NewScanner(os.Stdin)
+		ids_line, err = lib.Readln(ids_reader)
+	}
+	if err != nil && err != io.EOF {
+		panic(err)
+	}
 
 	// Parse header lines
-	for scanner.Scan() {
-		line := scanner.Text()
+	reader := bufio.NewReaderSize(os.Stdin, 128 * 1024)
 
+	line, err := lib.Readln(reader)
+	for err == nil {
 		if strings.HasPrefix(line, "##") {
 			fmt.Println(line)
 		} else if strings.HasPrefix(line, "#CHROM") {
 			fmt.Println(line)
 			break
+		} else {
+			err = errors.New("Invalid VCF header")
+			break
 		}
+
+		line, err = lib.Readln(reader)
 	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
+	if err != nil && err != io.EOF {
+		panic(err)
 	}
 
-	for scanner.Scan() {
-		line := scanner.Text()
+
+	line, err = lib.Readln(reader)
+	for err == nil {
 		records := strings.Split(line, "\t")
 
 		// Filter by id
@@ -72,8 +81,10 @@ func main() {
 				fmt.Println(line)
 			}
 		}
+
+		line, err = lib.Readln(reader)
 	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
+	if err != nil && err != io.EOF {
+		panic(err)
 	}
 }
