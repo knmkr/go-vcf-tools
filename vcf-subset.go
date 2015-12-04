@@ -1,13 +1,14 @@
 package main
 
 import (
-	"fmt"
-	"log"
 	"os"
 	"io"
-	"bufio"
-	"strings"
+	"fmt"
+	"log"
 	"flag"
+	"bufio"
+	"errors"
+	"strings"
 	"strconv"
 	"github.com/knmkr/go-vcf-tools/lib"
 )
@@ -39,6 +40,9 @@ func main() {
 			fmt.Print(strings.Join(fields[0:9], "\t"))
 			fmt.Print("\t")
 			sample_ids = fields[9:]
+			break
+		} else {
+			err = errors.New("Invalid VCF header")
 			break
 		}
 
