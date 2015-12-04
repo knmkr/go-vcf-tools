@@ -1,14 +1,16 @@
 package main
 
 import (
-	"fmt"
-	"log"
 	"os"
+	"io"
+	"fmt"
+	"flag"
 	"bufio"
+	"errors"
+	"regexp"
 	"strings"
 	"strconv"
-	"regexp"
-	"flag"
+	"github.com/knmkr/go-vcf-tools/lib"
 )
 
 func main() {
@@ -18,13 +20,12 @@ func main() {
 	is_genotype_as_pg_array := flag.Bool("genotype-as-pg-array", false, "Output genotype as PostgreSQL array. E.g., '{G,G}'")
 	flag.Parse()
 
-	scanner := bufio.NewScanner(os.Stdin)
+	reader := bufio.NewReaderSize(os.Stdin, 128 * 1024)
 
-	for scanner.Scan() {
-		line := scanner.Text()
-
+	line, err := lib.Readln(reader)
+	for err == nil {
 		if strings.HasPrefix(line, "##") {
-			continue
+			// pass
 		} else if strings.HasPrefix(line, "#CHROM") {
 			if ! *is_without_header {
 				fields := strings.Split(line, "\t")
@@ -36,16 +37,21 @@ func main() {
 				fmt.Println(strings.Join(fields[9:], "\t"))
 			}
 			break
+		} else {
+			err = errors.New("Invalid VCF header")
+			break
 		}
+
+		line, err = lib.Readln(reader)
 	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
+	if err != nil && err != io.EOF {
+		panic(err)
 	}
 
 	pattern := regexp.MustCompile(`rs(\d+)`)
 
-	for scanner.Scan() {
-		line := scanner.Text()
+	line, err = lib.Readln(reader)
+	for err == nil {
 		records := strings.Split(line, "\t")
 
 		chrom := records[0]
@@ -91,9 +97,11 @@ func main() {
 		}
 		result = append(result, genotypes...)
 		fmt.Println(strings.Join(result, "\t"))
+
+		line, err = lib.Readln(reader)
 	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
+	if err != nil && err != io.EOF {
+		panic(err)
 	}
 }
 
