@@ -1,36 +1,42 @@
 package main
 
 import (
-	"fmt"
-	"log"
+	"io"
 	"os"
+	"fmt"
 	"bufio"
+	"regexp"
+	"errors"
 	"strings"
 	"strconv"
-	"regexp"
+	"github.com/knmkr/go-vcf-tools/lib"
 )
 
 func main() {
-	scanner := bufio.NewScanner(os.Stdin)
+	reader := bufio.NewReaderSize(os.Stdin, 128 * 1024)
 
-	for scanner.Scan() {
-		line := scanner.Text()
-
+	line, err := lib.Readln(reader)
+	for err == nil {
 		if strings.HasPrefix(line, "##") {
-			continue
+			// pass
 		} else if strings.HasPrefix(line, "#CHROM") {
 			fmt.Println("#CHROM\tPOS\tID\tAllele\tFreq")
 			break
+		} else {
+			err = errors.New("Invalid VCF header")
+			break
 		}
+
+		line, err = lib.Readln(reader)
 	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
+	if err != nil && err != io.EOF {
+		panic(err)
 	}
 
 	pattern := regexp.MustCompile(`[|/]`)
 
-	for scanner.Scan() {
-		line := scanner.Text()
+	line, err = lib.Readln(reader)
+	for err == nil {
 		records := strings.Split(line, "\t")
 
 		chrom := records[0]
@@ -73,9 +79,11 @@ func main() {
 
 		result := []string{chrom, pos, id, strings.Join(alleles, ","), strings.Join(freqs, ",")}
 		fmt.Println(strings.Join(result, "\t"))
+
+		line, err = lib.Readln(reader)
 	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
+	if err != nil && err != io.EOF {
+		panic(err)
 	}
 }
 
