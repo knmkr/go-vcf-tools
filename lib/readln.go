@@ -99,7 +99,7 @@ func ChromToId(chrom string) string {
 		return "23"
 	case "Y":
 		return "24"
-	case "M":
+	case "MT":
 		return "25"
 	default:
 		panic("unrecognized chrom string")
