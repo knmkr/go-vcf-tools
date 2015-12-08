@@ -1,6 +1,7 @@
 package main
 
 import (
+	"regexp"
 	"errors"
 	"flag"
 	"bufio"
@@ -27,8 +28,15 @@ func main() {
 		os.Exit(0)
 	}
 
-	database_name := "bolt.db"
-	bucket_name := []byte(path.Base(*arg_bucket))
+	databaseName := "bolt.db"
+	bucketName := []byte(path.Base(*arg_bucket))
+
+	// Store chrpos <=> rsid mappings into bolt.db
+	db, err := bolt.Open(databaseName, 0600, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
 
 	if *arg_setup {
 		f, err := os.Open(*arg_bucket)
@@ -43,15 +51,10 @@ func main() {
 		}
 		defer gz.Close()
 
-		// Store chrpos <=> rsid mappings into bolt.db
-		db, err := bolt.Open(database_name, 0644, nil)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer db.Close()
-
+		// TODO: split into chunks, due to large memory consumption (>250Mb)
+		// TODO: workaround for non-uniq chrpos. skip high rs numbers?
 		err = db.Batch(func(tx *bolt.Tx) error {
-			bucket, err := tx.CreateBucketIfNotExists(bucket_name)
+			bucket, err := tx.CreateBucketIfNotExists(bucketName)
 			if err != nil {
 				return err
 			}
@@ -69,11 +72,10 @@ func main() {
 					// |------------|----------------|
 					// |        xx  |     xxxxxxxxx  |
 					// | (2 digits) |     (9 digits) |
-					chrpos, _ := strconv.ParseInt(lib.ChromToId(rsChr)+fmt.Sprintf("%09d", rsPos), 10, 64)
+					chrpos := lib.ChrPos(rsChr, rsPos)
 					key := lib.Itob(chrpos)
 					val := []byte(rsId)  // TODO: put/get rsId as byte(int)
 					err = bucket.Put(key, val)
-					fmt.Println(chrpos)
 				}
 
 				map_line, err = lib.Readln(map_reader)
@@ -113,61 +115,50 @@ func main() {
 		panic(err)
 	}
 
-	// TODO:
 	// Parse VCF body lines
+	pattern := regexp.MustCompile(`rs(\d+)`)
+
 	line, err = lib.Readln(reader)
 	for err == nil {
-		// records := strings.Split(line, "\t")
+		records := strings.Split(line, "\t")
 
-		// result := []string{}
-		// result = append(result, records[0:9]...)
-		// result = append(result, subset(records[9:], keep_idxs)...)
-		// fmt.Println(strings.Join(result, "\t"))
-		fmt.Println(line)
+		chrom := records[0]
+		pos, _ := strconv.ParseInt(records[1], 10, 64)
+		snpId := records[2]
+
+		rsIdFound := pattern.FindStringSubmatch(snpId)
+		if rsIdFound  != nil {
+			// skip
+			fmt.Println(line)
+		} else {
+			// fill
+			result := []string{}
+			result = append(result, records[0:2]...)
+
+			err = db.View(func(tx *bolt.Tx) error {
+				bucket := tx.Bucket(bucketName)
+				if bucket == nil {
+					return fmt.Errorf("Bucket %q not found!", bucketName)
+				}
+
+				val := bucket.Get(lib.Itob(lib.ChrPos(chrom, pos)))
+
+				if val != nil {
+					result = append(result, "rs" + string(val))
+				} else {
+					result = append(result, ".")
+				}
+
+				return nil
+			})
+
+			result = append(result, records[3:]...)
+			fmt.Println(strings.Join(result, "\t"))
+		}
 
 		line, err = lib.Readln(reader)
 	}
 	if err != nil && err != io.EOF {
 		panic(err)
-	}
-
-	// TODO:
-	// retrieve the data
-	db, err := bolt.Open(database_name, 0600, nil)  // FIXME: read-only?
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
-	err = db.View(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket(bucket_name)
-		if bucket == nil {
-			return fmt.Errorf("Bucket %q not found!", bucket_name)
-		}
-
-		// Query example
-		query := []int64{13032446841,
-			13032447221,
-			7091839109,
-			7091747130,
-			7091779556,
-			7092408328,
-			7092373453,
-			7092383887,
-			7011364200,
-			7011337163,
-			9111718105,
-			16028025216}
-
-		for _, key := range query {
-			val := bucket.Get(lib.Itob(key))
-			fmt.Printf("%s\n", val)
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		log.Fatal(err)
 	}
 }
