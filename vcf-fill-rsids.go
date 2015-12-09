@@ -51,7 +51,6 @@ func main() {
 		}
 		defer gz.Close()
 
-		// TODO: split into chunks, due to large memory consumption (>250Mb)
 		// TODO: workaround for non-uniq chrpos. skip high rs numbers?
 		err = db.Batch(func(tx *bolt.Tx) error {
 			bucket, err := tx.CreateBucketIfNotExists(bucketName)

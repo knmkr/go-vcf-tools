@@ -1,0 +1,18 @@
+SRC=b142_SNPChrPosOnRef_105.bcp.gz
+BUILD=b142_GRCh37
+
+echo "[INFO] Initializing ..."
+mkdir -p .tmp
+cd .tmp
+gzip -dc ../${SRC}| head -n 10000| gzip > ${BUILD}
+../vcf-fill-rsids -bucket ${BUILD} -setup
+
+echo "[INFO] Bulk importing ..."
+gzip -dc ../${SRC}| split -l 1000000
+for x in ./x*; do
+    echo $x
+    gzip $x
+    mv $x.gz ${BUILD}
+    ../vcf-fill-rsids -bucket ${BUILD} -setup
+done
+rm ${BUILD}
