@@ -10,7 +10,6 @@ import (
 	"github.com/boltdb/bolt"
 	"github.com/knmkr/go-vcf-tools/lib"
 	"io"
-	"log"
 	"os"
 	"path"
 	"strconv"
@@ -34,7 +33,7 @@ func main() {
 	// Store chrpos <=> rsid mappings into bolt.db
 	db, err := bolt.Open(databaseName, 0600, nil)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	defer db.Close()
 
@@ -150,6 +149,9 @@ func main() {
 
 				return nil
 			})
+			if err != nil {
+				panic(err)
+			}
 
 			result = append(result, records[3:]...)
 			fmt.Println(strings.Join(result, "\t"))
