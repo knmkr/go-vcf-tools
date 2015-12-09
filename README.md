@@ -3,7 +3,7 @@
 ## vcf-filter
 
 ```
-$ cat a.vcf| vcf-filter rslist.txt
+$ cat a.vcf| vcf-filter -keep-ids ids.txt -keep-pos pos.txt
 ```
 
 ## vcf-freq
@@ -33,6 +33,5 @@ $ cat a.vcf| vcf-update RsMergeArch.bcp.gz
 ## WIP: vcf-fill-rsids
 
 ```
-$ vcf-fill-rsids -bucket head100000.bcp.gz -setup
-$ cat a.vcf| vcf-fill-rsids -bucket head100000.bcp.gz
+$ cat a.vcf| vcf-fill-rsids -bucket b142_GRCh37
 ```
