@@ -15,11 +15,10 @@ import (
 
 func main() {
 	arg_keep_ids := flag.String("keep-ids", "", "Path to a file of rs IDs to be kept. Each line contains one rs ID. E.g. rs123")
-	arg_keep_pos := flag.String("keep-pos", "", "Path to a file of loci to be kept. Each line contains one TAB delimited loci (chromosome and position). Whether chromosome starts with 'chr' like 'chr1' or not, chromosome is treated as '1' while filtering processes. E.g. 'chr1[TAB]100'. E.g. '1[TAB]100'.")
-	arg_remove_chr_string := flag.Bool("remove-chr-string", false, "Remove 'chr' strings from vcf CHROM records and output only chromosome codes. E.g. 'chr1' will be outputed as '1'.")
+	arg_keep_pos := flag.String("keep-pos", "", "Path to a file of loci to be kept. Each line contains one TAB delimited loci (chromosome and position). E.g. 1[TAB]100")
 	flag.Parse()
 
-	if len(os.Args) < 2 {
+	if len(os.Args) != 3 && len(os.Args) != 5 {
 		flag.Usage()
 		os.Exit(0)
 	}
@@ -110,17 +109,10 @@ func main() {
 		records := strings.Split(line, "\t")
 		var is_pass bool
 
-		var chrom string
-		if *arg_remove_chr_string {
-			chrom = strings.Replace(records[0], "chr", "", 1)
-		} else {
-			chrom = records[0]
-		}
-
 		// Filter by id
 		if *arg_keep_ids != "" {
 			id_found := pattern.FindStringSubmatch(records[2])
-			if id_found != nil {
+			if id_found  != nil {
 				id, _  := strconv.Atoi(id_found[1])
 
 				if keep_ids[id] {
@@ -131,6 +123,7 @@ func main() {
 
 		// Filter by loci
 		if *arg_keep_pos != "" {
+			chrom  := records[0]
 			pos, _ := strconv.ParseInt(records[1], 10, 64)
 			chrpos := lib.ChrPos(chrom, pos)
 
@@ -140,10 +133,7 @@ func main() {
 		}
 
 		if is_pass {
-			result := []string{}
-			result = append(result, chrom)
-			result = append(result, records[1:]...)
-			fmt.Println(strings.Join(result, "\t"))
+			fmt.Println(line)
 		}
 
 		line, err = lib.Readln(reader)
