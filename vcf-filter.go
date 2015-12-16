@@ -16,9 +16,10 @@ import (
 func main() {
 	arg_keep_ids := flag.String("keep-ids", "", "Path to a file of rs IDs to be kept. Each line contains one rs ID. E.g. rs123")
 	arg_keep_pos := flag.String("keep-pos", "", "Path to a file of loci to be kept. Each line contains one TAB delimited loci (chromosome and position). E.g. 1[TAB]100")
+	arg_keep_only_pass := flag.Bool("keep-only-pass", false, "Keep only FILTER = PASS records")
 	flag.Parse()
 
-	if len(os.Args) != 3 && len(os.Args) != 5 {
+	if len(os.Args) != 2 && len(os.Args) != 3 && len(os.Args) != 4 && len(os.Args) != 5 && len(os.Args) != 6 {
 		flag.Usage()
 		os.Exit(0)
 	}
@@ -129,6 +130,15 @@ func main() {
 
 			if keep_pos[chrpos] {
 				is_pass = true
+			}
+		}
+
+		// Filter by FILTER = PASS
+		if *arg_keep_only_pass {
+			if records[6] == "PASS" {
+				is_pass = true
+			} else {
+				is_pass = false
 			}
 		}
 
