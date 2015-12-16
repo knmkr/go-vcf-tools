@@ -15,19 +15,21 @@ import (
 func main() {
 	arg_remove_chr_string := flag.Bool("remove-chr-string", false, "Remove 'chr' strings from vcf CHROM records and output only chromosome codes. E.g. 'chr1' will be outputed as '1'.")
 	arg_remove_info := flag.Bool("remove-info", false, "Remove 'INFO' field records and output as '.'.")
+	// TODO: arg_keep_gt_only := flag.Bool("keep-only-gt", false, "Keep only 'GT' (Genotype) records and remove other records defined in 'FORMAT' fields.")
 	flag.Parse()
 
 	// Parse header lines
 	reader := bufio.NewReaderSize(os.Stdin, 128 * 1024)
 
 	contig_fields_pattern := regexp.MustCompile(`##contig=<(.+)>`)
+	info_fields_pattern := regexp.MustCompile(`##INFO=<(.+)>`)
 
 	line, err := lib.Readln(reader)
 	for err == nil {
 		if strings.HasPrefix(line, "##") {
 
-			// Remove 'chr' from contig fields in header
 			if *arg_remove_chr_string {
+				// Remove 'chr' from contig fields in header
 				contig_field_founds := contig_fields_pattern.FindStringSubmatch(line)
 				if contig_field_founds != nil {
 					contig_field := contig_field_founds[1]
@@ -41,6 +43,12 @@ func main() {
 					}
 					fmt.Println("##contig=<" + strings.Join(result, ",") + ">")
 				} else {
+					fmt.Println(line)
+				}
+			} else if *arg_remove_info {
+				// Skip INFO fields in header
+				info_field_founds := info_fields_pattern.FindStringSubmatch(line)
+				if info_field_founds == nil {
 					fmt.Println(line)
 				}
 			} else {
