@@ -18,6 +18,7 @@ func main() {
 	is_without_chr_pos := flag.Bool("without-chr-pos", false, "Output without CHROM and POS.")
 	is_rs_id_as_int := flag.Bool("rs-id-as-int", false, "Output rs ID as integer.")
 	is_genotype_as_pg_array := flag.Bool("genotype-as-pg-array", false, "Output genotype as PostgreSQL array. E.g., '{G,G}'")
+	is_chrx_genotype_as_homo := flag.Bool("chrx-genotype-as-homo", false, "Output chrX genotype as homozygous")
 	flag.Parse()
 
 	reader := bufio.NewReaderSize(os.Stdin, 128 * 1024)
@@ -79,6 +80,13 @@ func main() {
 				var genotype string
 				if format[j] == "GT" {
 					_gt := gt2genotype(ref, alt, gt[j])
+
+					if *is_chrx_genotype_as_homo && chrom == "X" {
+						if len(_gt) == 1 {
+							_gt = append(_gt, _gt...)
+						}
+					}
+
 					if *is_genotype_as_pg_array {
 						genotype = "{" + strings.Join(_gt, ",") + "}"
 					} else {
