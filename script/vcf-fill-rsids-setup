@@ -1,5 +1,5 @@
-SRC=b142_SNPChrPosOnRef_105.bcp.gz
-BUILD=b142_GRCh37
+SRC=b144_SNPChrPosOnRef_105.bcp.gz
+BUILD=b144_GRCh37
 
 echo "[INFO] Initializing ..."
 mkdir -p .tmp
