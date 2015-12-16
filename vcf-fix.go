@@ -14,6 +14,7 @@ import (
 
 func main() {
 	arg_remove_chr_string := flag.Bool("remove-chr-string", false, "Remove 'chr' strings from vcf CHROM records and output only chromosome codes. E.g. 'chr1' will be outputed as '1'.")
+	arg_remove_info := flag.Bool("remove-info", false, "Remove 'INFO' field records and output as '.'.")
 	flag.Parse()
 
 	// Parse header lines
@@ -72,9 +73,18 @@ func main() {
 			chrom = records[0]
 		}
 
+		var info string
+		if *arg_remove_info {
+			info = "."
+		} else {
+			info = records[7]
+		}
+
 		result := []string{}
 		result = append(result, chrom)
-		result = append(result, records[1:]...)
+		result = append(result, records[1:7]...)
+		result = append(result, info)
+		result = append(result, records[8:]...)
 		fmt.Println(strings.Join(result, "\t"))
 
 		line, err = lib.Readln(reader)
