@@ -1,50 +1,49 @@
 package main
 
 import (
-	"regexp"
-	"errors"
-	"flag"
 	"bufio"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"github.com/boltdb/bolt"
+	"github.com/codegangsta/cli"
 	"github.com/knmkr/go-vcf-tools/lib"
 	"io"
 	"os"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 )
 
-func main() {
-	arg_bucket    := flag.String("bucket", "", "Mappings of chrom/pos on reference genome. E.g., b142_SNPChrPosOnRef_105.bcp.gz")
-	arg_setup     := flag.Bool("setup", false, "Setup local db.")
-	arg_overwrite := flag.Bool("overwrite", false, "Overwrite rs ids if already exist in vcf. However, for loci not in local db, original records will be kept.")
-	arg_strict    := flag.Bool("strict", false, "Along with '-overwrite' option, for loci not in local db will be filled as '.'")
-	flag.Parse()
+func doFillRsids(c *cli.Context) {
+	arg_bucket := c.String("bucket")
+	arg_setup := c.Bool("setup")
+	arg_overwrite := c.Bool("overwrite")
+	arg_strict := c.Bool("strict")
 
-	if len(os.Args) <=2 {
+	if len(c.Args()) <= 2 {
 		fmt.Fprintln(os.Stderr)
 		fmt.Fprintln(os.Stderr, "[FATAL] too few arguments")
 		fmt.Fprintln(os.Stderr)
-		flag.Usage()
-		os.Exit(0)
-	} else if ! *arg_overwrite && *arg_strict {
+		cli.ShowCommandHelp(c, "fill-rsids")
+		os.Exit(1)
+	} else if !arg_overwrite && arg_strict {
 		fmt.Fprintln(os.Stderr)
 		fmt.Fprintln(os.Stderr, "[FATAL] -strict option is only effective with -overwrite option")
 		fmt.Fprintln(os.Stderr)
-		flag.Usage()
-		os.Exit(0)
-	} else if *arg_bucket == "" {
+		cli.ShowCommandHelp(c, "fill-rsids")
+		os.Exit(1)
+	} else if arg_bucket == "" {
 		fmt.Fprintln(os.Stderr)
 		fmt.Fprintln(os.Stderr, "[FATAL] -bucket is required")
 		fmt.Fprintln(os.Stderr)
-		flag.Usage()
-		os.Exit(0)
+		cli.ShowCommandHelp(c, "fill-rsids")
+		os.Exit(1)
 	}
 
 	databaseName := "bolt.db"
-	bucketName := []byte(path.Base(*arg_bucket))
+	bucketName := []byte(path.Base(arg_bucket))
 
 	// Store chrpos <=> rsid mappings into bolt.db
 	db, err := bolt.Open(databaseName, 0600, nil)
@@ -53,8 +52,8 @@ func main() {
 	}
 	defer db.Close()
 
-	if *arg_setup {
-		f, err := os.Open(*arg_bucket)
+	if arg_setup {
+		f, err := os.Open(arg_bucket)
 		if err != nil {
 			panic(err)
 		}
@@ -94,7 +93,7 @@ func main() {
 					// | (2 digits) |     (9 digits) |
 					chrpos := lib.ChrPos(rsChr, rsPos)
 					key := lib.Itob(chrpos)
-					val := []byte(rsId)  // TODO: put/get rsId as byte(int)
+					val := []byte(rsId) // TODO: put/get rsId as byte(int)
 					err = bucket.Put(key, val)
 				}
 
@@ -115,7 +114,7 @@ func main() {
 	}
 
 	// Parse VCF header lines
-	reader := bufio.NewReaderSize(os.Stdin, 64 * 1024)
+	reader := bufio.NewReaderSize(os.Stdin, 64*1024)
 
 	line, err := lib.Readln(reader)
 	for err == nil {
@@ -153,10 +152,10 @@ func main() {
 		// |-----------|---------------|---------------|
 		// | "rsxxxx"  | fill          | skip          |
 		// | "."       | fill          | fill          |
-		if rsIdFound != nil && ! *arg_overwrite {
+		if rsIdFound != nil && !arg_overwrite {
 			// Skip
 			fmt.Println(line)
-		} else if (rsIdFound != nil && *arg_overwrite) || rsIdFound == nil {
+		} else if (rsIdFound != nil && arg_overwrite) || rsIdFound == nil {
 			// Fill
 			result := []string{}
 			result = append(result, records[0:2]...)
@@ -171,10 +170,10 @@ func main() {
 
 				if val != nil {
 					// Fill rs id if locus is found.
-					result = append(result, "rs" + string(val))
+					result = append(result, "rs"+string(val))
 				} else {
 
-					if *arg_strict {
+					if arg_strict {
 						// Fill '.' if locus in not found ('-strict' option).
 						result = append(result, ".")
 					} else {

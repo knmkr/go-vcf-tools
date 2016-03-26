@@ -10,6 +10,7 @@ var Commands = []cli.Command{
 	commandFreq,
 	commandUpdate,
 	commandToTab,
+	commandFillRsids,
 }
 
 var commandFilter = cli.Command{
@@ -94,6 +95,30 @@ var commandToTab = cli.Command{
 		cli.BoolFlag{
 			Name:  "chrx-genotype-as-homo",
 			Usage: "Output chrX genotype as homozygous",
+		},
+	},
+}
+
+var commandFillRsids = cli.Command{
+	Name:   "fill-rsids",
+	Usage:  "",
+	Action: doFillRsids,
+	Flags: []cli.Flag{
+		cli.StringFlag{
+			Name:  "bucket",
+			Usage: "Mappings of chrom/pos on reference genome. E.g., b142_SNPChrPosOnRef_105.bcp.gz",
+		},
+		cli.BoolFlag{
+			Name:  "setup",
+			Usage: "Setup local db.",
+		},
+		cli.BoolFlag{
+			Name:  "overwrite",
+			Usage: "Overwrite rs ids if already exist in vcf. However, for loci not in local db, original records will be kept.",
+		},
+		cli.BoolFlag{
+			Name:  "strict",
+			Usage: "Along with '-overwrite' option, for loci not in local db will be filled as '.'",
 		},
 	},
 }
