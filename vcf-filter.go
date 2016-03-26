@@ -1,28 +1,23 @@
 package main
 
 import (
-	"flag"
-	"os"
-	"io"
-	"fmt"
 	"bufio"
-	"regexp"
 	"errors"
+	"fmt"
+	"io"
+	"os"
+	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/codegangsta/cli"
 	"github.com/knmkr/go-vcf-tools/lib"
 )
 
-func main() {
-	arg_keep_ids := flag.String("keep-ids", "", "Path to a file of rs IDs to be kept. Each line contains one rs ID. E.g. rs123")
-	arg_keep_pos := flag.String("keep-pos", "", "Path to a file of loci to be kept. Each line contains one TAB delimited loci (chromosome and position). E.g. 1[TAB]100")
-	arg_keep_only_pass := flag.Bool("keep-only-pass", false, "Keep only FILTER = PASS records")
-	flag.Parse()
-
-	if len(os.Args) != 2 && len(os.Args) != 3 && len(os.Args) != 4 && len(os.Args) != 5 && len(os.Args) != 6 {
-		flag.Usage()
-		os.Exit(0)
-	}
+func doFilter(c *cli.Context) {
+	arg_keep_ids := c.String("keep-ids")
+	arg_keep_pos := c.String("keep-pos")
+	arg_keep_only_pass := c.Bool("keep-only-pass")
 
 	pattern := regexp.MustCompile(`rs(\d+)`)
 
@@ -30,17 +25,17 @@ func main() {
 	keep_pos := make(map[int64]bool)
 
 	// Get SNP IDs to be kept if exists
-	if *arg_keep_ids != "" {
+	if arg_keep_ids != "" {
 		var ids_fp *os.File
 		var err error
 
-		ids_fp, err = os.Open(*arg_keep_ids)
+		ids_fp, err = os.Open(arg_keep_ids)
 		if err != nil {
 			panic(err)
 		}
 		defer ids_fp.Close()
 
-		ids_reader := bufio.NewReaderSize(ids_fp, 128 * 1024)
+		ids_reader := bufio.NewReaderSize(ids_fp, 128*1024)
 		ids_line, err := lib.Readln(ids_reader)
 		for err == nil {
 			id_found := pattern.FindStringSubmatch(ids_line)
@@ -57,21 +52,21 @@ func main() {
 	}
 
 	// Get loci to be kept if exists
-	if *arg_keep_pos != "" {
+	if arg_keep_pos != "" {
 		var pos_fp *os.File
 		var err error
 
-		pos_fp, err = os.Open(*arg_keep_pos)
+		pos_fp, err = os.Open(arg_keep_pos)
 		if err != nil {
 			panic(err)
 		}
 		defer pos_fp.Close()
 
-		pos_reader := bufio.NewReaderSize(pos_fp, 128 * 1024)
+		pos_reader := bufio.NewReaderSize(pos_fp, 128*1024)
 		pos_line, err := lib.Readln(pos_reader)
 		for err == nil {
 			records := strings.Split(pos_line, "\t")
-			chrom  := records[0]
+			chrom := records[0]
 			pos, _ := strconv.ParseInt(records[1], 10, 64)
 			chrpos := lib.ChrPos(chrom, pos)
 			keep_pos[chrpos] = true
@@ -84,7 +79,7 @@ func main() {
 	}
 
 	// Parse header lines
-	reader := bufio.NewReaderSize(os.Stdin, 128 * 1024)
+	reader := bufio.NewReaderSize(os.Stdin, 128*1024)
 
 	line, err := lib.Readln(reader)
 	for err == nil {
@@ -111,10 +106,10 @@ func main() {
 		var is_pass bool
 
 		// Filter by id
-		if *arg_keep_ids != "" {
+		if arg_keep_ids != "" {
 			id_found := pattern.FindStringSubmatch(records[2])
-			if id_found  != nil {
-				id, _  := strconv.Atoi(id_found[1])
+			if id_found != nil {
+				id, _ := strconv.Atoi(id_found[1])
 
 				if keep_ids[id] {
 					is_pass = true
@@ -123,8 +118,8 @@ func main() {
 		}
 
 		// Filter by loci
-		if *arg_keep_pos != "" {
-			chrom  := records[0]
+		if arg_keep_pos != "" {
+			chrom := records[0]
 			pos, _ := strconv.ParseInt(records[1], 10, 64)
 			chrpos := lib.ChrPos(chrom, pos)
 
@@ -134,7 +129,7 @@ func main() {
 		}
 
 		// Filter by FILTER = PASS
-		if *arg_keep_only_pass {
+		if arg_keep_only_pass {
 			if records[6] == "PASS" {
 				is_pass = true
 			} else {
@@ -150,5 +145,6 @@ func main() {
 	}
 	if err != nil && err != io.EOF {
 		panic(err)
+
 	}
 }
