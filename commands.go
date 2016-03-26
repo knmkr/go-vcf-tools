@@ -11,6 +11,7 @@ var Commands = []cli.Command{
 	commandUpdate,
 	commandToTab,
 	commandFillRsids,
+	commandFix,
 }
 
 var commandFilter = cli.Command{
@@ -119,6 +120,22 @@ var commandFillRsids = cli.Command{
 		cli.BoolFlag{
 			Name:  "strict",
 			Usage: "Along with '-overwrite' option, for loci not in local db will be filled as '.'",
+		},
+	},
+}
+
+var commandFix = cli.Command{
+	Name:   "fix",
+	Usage:  "",
+	Action: doFix,
+	Flags: []cli.Flag{
+		cli.BoolFlag{
+			Name:  "remove-chr-string",
+			Usage: "Remove 'chr' strings from vcf CHROM records and output only chromosome codes. E.g. 'chr1' will be outputed as '1'.",
+		},
+		cli.BoolFlag{
+			Name:  "remove-info",
+			Usage: "Remove 'INFO' field records and output as '.'.",
 		},
 	},
 }
