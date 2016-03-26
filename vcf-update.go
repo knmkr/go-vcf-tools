@@ -1,25 +1,28 @@
 package main
 
 import (
-	"os"
-	"io"
-	"fmt"
 	"bufio"
-	"strings"
-	"regexp"
-	"errors"
-	"strconv"
 	"compress/gzip"
+	"errors"
+	"fmt"
+	"github.com/codegangsta/cli"
 	"github.com/knmkr/go-vcf-tools/lib"
+	"io"
+	"os"
+	"regexp"
+	"strconv"
+	"strings"
 )
 
-func main() {
-	if len(os.Args) <= 1 {
-		fmt.Printf("Usage: %s <RsMergeArch.bcp.gz> < in.vcf > out.vcf\n", os.Args[0])
-		os.Exit(0)
+func doUpdate(c *cli.Context) {
+	arg_rs_merge_arch := c.String("rs-merge-arch")
+
+	if arg_rs_merge_arch == "" {
+		cli.ShowCommandHelp(c, "update")
+		os.Exit(1)
 	}
 
-	f, err := os.Open(os.Args[1])
+	f, err := os.Open(arg_rs_merge_arch)
 	if err != nil {
 		panic(err)
 	}
@@ -60,12 +63,12 @@ func main() {
 	// Get merge mappings of rs IDs
 	rsHigh2current := make(map[int]int)
 
-	map_reader := bufio.NewReaderSize(gz, 128 * 1024)
+	map_reader := bufio.NewReaderSize(gz, 128*1024)
 	map_line, err := lib.Readln(map_reader)
 	for err == nil {
 		records := strings.Split(map_line, "\t")
-		rsHigh, _  := strconv.Atoi(records[0])
-		rsCurrent, _  := strconv.Atoi(records[6])
+		rsHigh, _ := strconv.Atoi(records[0])
+		rsCurrent, _ := strconv.Atoi(records[6])
 		rsHigh2current[rsHigh] = rsCurrent
 
 		map_line, err = lib.Readln(map_reader)
@@ -75,7 +78,7 @@ func main() {
 	}
 
 	// Parse header lines
-	reader := bufio.NewReaderSize(os.Stdin, 128 * 1024)
+	reader := bufio.NewReaderSize(os.Stdin, 128*1024)
 
 	line, err := lib.Readln(reader)
 	for err == nil {
@@ -104,17 +107,17 @@ func main() {
 		// Update rs ID
 		var id_updated_str string
 		id_found := pattern.FindStringSubmatch(records[2])
-		if id_found  != nil {
-			id, _  := strconv.Atoi(id_found[1])
+		if id_found != nil {
+			id, _ := strconv.Atoi(id_found[1])
 			id_updated := rsHigh2current[id]
 
 			if id_updated != 0 {
-				id_updated_str = "rs" + strconv.Itoa(id_updated)  // Map to current ID
+				id_updated_str = "rs" + strconv.Itoa(id_updated) // Map to current ID
 			} else {
-				id_updated_str = records[2]  // ID is not listed in merge history
+				id_updated_str = records[2] // ID is not listed in merge history
 			}
 		} else {
-			id_updated_str = records[2]  // ID is not rs ID
+			id_updated_str = records[2] // ID is not rs ID
 		}
 
 		result := []string{}

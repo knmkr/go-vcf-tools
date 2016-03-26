@@ -8,6 +8,7 @@ var Commands = []cli.Command{
 	commandFilter,
 	commandSubset,
 	commandFreq,
+	commandUpdate,
 }
 
 var commandFilter = cli.Command{
@@ -54,4 +55,16 @@ var commandFreq = cli.Command{
 	Name:   "freq",
 	Usage:  "",
 	Action: doFreq,
+}
+
+var commandUpdate = cli.Command{
+	Name:   "update",
+	Usage:  "",
+	Action: doUpdate,
+	Flags: []cli.Flag{
+		cli.StringFlag{
+			Name:  "rs-merge-arch",
+			Usage: "",
+		},
+	},
 }
