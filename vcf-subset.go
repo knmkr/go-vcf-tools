@@ -1,32 +1,24 @@
 package main
 
 import (
-	"os"
-	"io"
-	"fmt"
-	"log"
-	"flag"
 	"bufio"
 	"errors"
-	"strings"
-	"strconv"
+	"fmt"
+	"github.com/codegangsta/cli"
 	"github.com/knmkr/go-vcf-tools/lib"
+	"io"
+	"log"
+	"os"
+	"strconv"
+	"strings"
 )
 
-func main() {
-	arg_keep_id := flag.String("keep-id", "", "A sample ID to be kept. E.g., NA00001")
-	arg_keep_ids := flag.String("keep-ids", "", "Path to a file of sample IDs to be kept. Each line contains one sample ID.")
-	arg_keep_index := flag.String("keep-index", "", "An index of sample ID field to be kept. E.g., to keep 1st sample, set: 0")
-	flag.Parse()
+func doSubset(c *cli.Context) {
+	arg_keep_id := c.String("keep-id")
+	arg_keep_ids := c.String("keep-ids")
+	arg_keep_index := c.String("keep-index")
 
-	if len(os.Args) <=2 || len(os.Args) > 4 {
-		fmt.Fprintln(os.Stderr, "Set only one of --keep-id/--keep-ids/--keep-index")
-		fmt.Fprintln(os.Stderr)
-		flag.Usage()
-		os.Exit(0)
-	}
-
-	reader := bufio.NewReaderSize(os.Stdin, 64 * 1024)
+	reader := bufio.NewReaderSize(os.Stdin, 64*1024)
 
 	// Parse header lines
 	var sample_ids []string
@@ -56,23 +48,23 @@ func main() {
 	keep_ids := []string{}
 	keep_idxs := []int{}
 
-	if *arg_keep_id != "" || *arg_keep_ids != "" {
-		if *arg_keep_id != "" {
+	if arg_keep_id != "" || arg_keep_ids != "" {
+		if arg_keep_id != "" {
 			// A sample ID to be kept. E.g., NA00001
-			keep_ids = append(keep_ids, *arg_keep_id)
+			keep_ids = append(keep_ids, arg_keep_id)
 		} else {
 			// Path to a file of sample IDs to be kept. Each line contains one sample ID.
-			fp, err := os.Open(*arg_keep_ids)
+			fp, err := os.Open(arg_keep_ids)
 			if err != nil {
 				panic(err)
 			}
 			defer fp.Close()
 
-			ids_reader := bufio.NewReaderSize(fp, 128 * 1024)
+			ids_reader := bufio.NewReaderSize(fp, 128*1024)
 			ids_line, err := lib.Readln(ids_reader)
 			for err == nil {
 				keep_ids = append(keep_ids, ids_line)
-			 	ids_line, err = lib.Readln(ids_reader)
+				ids_line, err = lib.Readln(ids_reader)
 			}
 			if err != nil && err != io.EOF {
 				panic(err)
@@ -93,9 +85,9 @@ func main() {
 			log.Fatal("No sample IDs matched.")
 		}
 
-	} else if *arg_keep_index != "" {
+	} else if arg_keep_index != "" {
 		// An index of sample ID field to be kept. E.g., to keep 1st sample, set: 0
-		_keep_idx, _  := strconv.Atoi(*arg_keep_index)
+		_keep_idx, _ := strconv.Atoi(arg_keep_index)
 
 		if _keep_idx > len(sample_ids) {
 			fmt.Println()
