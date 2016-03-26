@@ -1,36 +1,35 @@
 package main
 
 import (
-	"os"
-	"io"
-	"fmt"
-	"flag"
 	"bufio"
 	"errors"
-	"regexp"
-	"strings"
-	"strconv"
+	"fmt"
+	"github.com/codegangsta/cli"
 	"github.com/knmkr/go-vcf-tools/lib"
+	"io"
+	"os"
+	"regexp"
+	"strconv"
+	"strings"
 )
 
-func main() {
-	is_without_header := flag.Bool("without-header", false, "Output without header line.")
-	is_without_chr_pos := flag.Bool("without-chr-pos", false, "Output without CHROM and POS.")
-	is_rs_id_as_int := flag.Bool("rs-id-as-int", false, "Output rs ID as integer.")
-	is_genotype_as_pg_array := flag.Bool("genotype-as-pg-array", false, "Output genotype as PostgreSQL array. E.g., '{G,G}'")
-	is_chrx_genotype_as_homo := flag.Bool("chrx-genotype-as-homo", false, "Output chrX genotype as homozygous")
-	flag.Parse()
+func doToTab(c *cli.Context) {
+	is_without_header := c.Bool("without-header")
+	is_without_chr_pos := c.Bool("without-chr-pos")
+	is_rs_id_as_int := c.Bool("rs-id-as-int")
+	is_genotype_as_pg_array := c.Bool("genotype-as-pg-array")
+	is_chrx_genotype_as_homo := c.Bool("chrx-genotype-as-homo")
 
-	reader := bufio.NewReaderSize(os.Stdin, 128 * 1024)
+	reader := bufio.NewReaderSize(os.Stdin, 128*1024)
 
 	line, err := lib.Readln(reader)
 	for err == nil {
 		if strings.HasPrefix(line, "##") {
 			// pass
 		} else if strings.HasPrefix(line, "#CHROM") {
-			if ! *is_without_header {
+			if !is_without_header {
 				fields := strings.Split(line, "\t")
-				if ! *is_without_chr_pos {
+				if !is_without_chr_pos {
 					fmt.Print("#CHROM\tPOS\tID\t")
 				} else {
 					fmt.Print("ID\t")
@@ -59,9 +58,9 @@ func main() {
 		pos := records[1]
 		id := records[2]
 
-		if *is_rs_id_as_int {
+		if is_rs_id_as_int {
 			id_found := pattern.FindStringSubmatch(records[2])
-			if id_found  != nil {
+			if id_found != nil {
 				id = id_found[1]
 			}
 		}
@@ -81,13 +80,13 @@ func main() {
 				if format[j] == "GT" {
 					_gt := gt2genotype(ref, alt, gt[j])
 
-					if *is_chrx_genotype_as_homo && chrom == "X" {
+					if is_chrx_genotype_as_homo && chrom == "X" {
 						if len(_gt) == 1 {
 							_gt = append(_gt, _gt...)
 						}
 					}
 
-					if *is_genotype_as_pg_array {
+					if is_genotype_as_pg_array {
 						genotype = "{" + strings.Join(_gt, ",") + "}"
 					} else {
 						genotype = strings.Join(_gt, "/")
@@ -98,7 +97,7 @@ func main() {
 		}
 
 		result := []string{}
-		if ! *is_without_chr_pos {
+		if !is_without_chr_pos {
 			result = []string{chrom, pos, id}
 		} else {
 			result = []string{id}

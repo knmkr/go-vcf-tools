@@ -9,6 +9,7 @@ var Commands = []cli.Command{
 	commandSubset,
 	commandFreq,
 	commandUpdate,
+	commandToTab,
 }
 
 var commandFilter = cli.Command{
@@ -65,6 +66,34 @@ var commandUpdate = cli.Command{
 		cli.StringFlag{
 			Name:  "rs-merge-arch",
 			Usage: "",
+		},
+	},
+}
+
+var commandToTab = cli.Command{
+	Name:   "to-tab",
+	Usage:  "",
+	Action: doToTab,
+	Flags: []cli.Flag{
+		cli.BoolFlag{
+			Name:  "without-header",
+			Usage: "Output without header line.",
+		},
+		cli.BoolFlag{
+			Name:  "without-chr-pos",
+			Usage: "Output without CHROM and POS.",
+		},
+		cli.BoolFlag{
+			Name:  "rs-id-as-int",
+			Usage: "Output rs ID as integer.",
+		},
+		cli.BoolFlag{
+			Name:  "genotype-as-pg-array",
+			Usage: "Output genotype as PostgreSQL array. E.g., '{G,G}'",
+		},
+		cli.BoolFlag{
+			Name:  "chrx-genotype-as-homo",
+			Usage: "Output chrX genotype as homozygous",
 		},
 	},
 }
