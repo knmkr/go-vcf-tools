@@ -1,37 +1,37 @@
 # go-vcf-tools
 
-## vcf-filter
+## filter
 
 ```
-$ cat a.vcf| vcf-filter -keep-ids ids.txt -keep-pos pos.txt
+$ cat a.vcf| go-vcf filter --keep-ids ids.txt --keep-pos pos.txt
 ```
 
-## vcf-freq
+## freq
 
 ```
-$ cat a.vcf| vcf-freq
+$ cat a.vcf| go-vcf freq
 ```
 
-## vcf-subset
+## subset
 
 ```
-$ cat a.vcf| vcf-subset --keep-index 0
+$ cat a.vcf| go-vcf subset --keep-index 0
 ```
 
-## vcf-to-tab
+## to-tab
 
 ```
-$ cat a.vcf| vcf-to-tab
+$ cat a.vcf| go-vcf to-tab
 ```
 
-## vcf-update
+## update
 
 ```
-$ cat a.vcf| vcf-update RsMergeArch.bcp.gz
+$ cat a.vcf| go-vcf update --rs-merge-arch RsMergeArch.bcp.gz
 ```
 
-## WIP: vcf-fill-rsids
+## WIP: fill-rsids
 
 ```
-$ cat a.vcf| vcf-fill-rsids -bucket b142_GRCh37
+$ cat a.vcf| go-vcf fill-rsids --bucket b142_GRCh37
 ```
