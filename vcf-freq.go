@@ -1,19 +1,20 @@
 package main
 
 import (
+	"bufio"
+	"errors"
+	"fmt"
+	"github.com/codegangsta/cli"
+	"github.com/knmkr/go-vcf-tools/lib"
 	"io"
 	"os"
-	"fmt"
-	"bufio"
 	"regexp"
-	"errors"
-	"strings"
 	"strconv"
-	"github.com/knmkr/go-vcf-tools/lib"
+	"strings"
 )
 
-func main() {
-	reader := bufio.NewReaderSize(os.Stdin, 128 * 1024)
+func doFreq(c *cli.Context) {
+	reader := bufio.NewReaderSize(os.Stdin, 128*1024)
 
 	line, err := lib.Readln(reader)
 	for err == nil {
@@ -71,10 +72,10 @@ func main() {
 			}
 		}
 
-		total := float64(sum(count))  // TODO: decimal?
+		total := float64(sum(count)) // TODO: decimal?
 		freqs := []string{}
 		for i := range count {
-			freqs = append(freqs, fmt.Sprintf("%.4f", float64(count[i]) / total))  // TODO:
+			freqs = append(freqs, fmt.Sprintf("%.4f", float64(count[i])/total)) // TODO:
 		}
 
 		result := []string{chrom, pos, id, strings.Join(alleles, ","), strings.Join(freqs, ",")}
@@ -89,7 +90,7 @@ func main() {
 
 func sum(vals []int) int {
 	var result int
-	for i:= range vals {
+	for i := range vals {
 		result += vals[i]
 	}
 	return result

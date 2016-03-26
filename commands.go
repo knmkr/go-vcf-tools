@@ -7,6 +7,7 @@ import (
 var Commands = []cli.Command{
 	commandFilter,
 	commandSubset,
+	commandFreq,
 }
 
 var commandFilter = cli.Command{
@@ -47,4 +48,10 @@ var commandSubset = cli.Command{
 			Usage: "An index of sample ID field to be kept. E.g., to keep 1st sample, set: 0",
 		},
 	},
+}
+
+var commandFreq = cli.Command{
+	Name:   "freq",
+	Usage:  "",
+	Action: doFreq,
 }
