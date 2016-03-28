@@ -138,6 +138,10 @@ var commandFix = cli.Command{
 			Usage: "Remove 'QUAL' field records and output as '.'.",
 		},
 		cli.BoolFlag{
+			Name:  "remove-filter",
+			Usage: "Remove 'FILTER' field records and output as '.'.",
+		},
+		cli.BoolFlag{
 			Name:  "remove-info",
 			Usage: "Remove 'INFO' field records and output as '.'.",
 		},

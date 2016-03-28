@@ -15,6 +15,7 @@ import (
 func doFix(c *cli.Context) {
 	arg_remove_chr_string := c.Bool("remove-chr-string")
 	arg_remove_qual := c.Bool("remove-qual")
+	arg_remove_filter := c.Bool("remove-filter")
 	arg_remove_info := c.Bool("remove-info")
 	arg_keep_gt_only := c.Bool("keep-only-gt")
 
@@ -24,6 +25,7 @@ func doFix(c *cli.Context) {
 	contig_pattern := regexp.MustCompile(`##contig=<(.+)>`)
 	info_pattern := regexp.MustCompile(`##INFO=<(.+)>`)
 	format_pattern := regexp.MustCompile(`##FORMAT=<(.+)>`)
+	filter_pattern := regexp.MustCompile(`##FILTER=<(.+)>`)
 
 	line, err := lib.Readln(reader)
 	for err == nil {
@@ -31,6 +33,7 @@ func doFix(c *cli.Context) {
 			contig_founds := contig_pattern.FindStringSubmatch(line)
 			info_founds := info_pattern.FindStringSubmatch(line)
 			format_founds := format_pattern.FindStringSubmatch(line)
+			filter_founds := filter_pattern.FindStringSubmatch(line)
 
 			if arg_remove_chr_string && contig_founds != nil {
 				// Remove 'chr' from contig meta-infos in header
@@ -45,6 +48,8 @@ func doFix(c *cli.Context) {
 				fmt.Println("##contig=<" + strings.Join(result, ",") + ">")
 			} else if arg_remove_info && info_founds != nil {
 				// Skip INFO meta-info
+			} else if arg_remove_filter && filter_founds != nil {
+				// Skip FILTER meta-info
 			} else if arg_keep_gt_only && format_founds != nil {
 				// Skip FORMAT meta-info tags except GT
 				for _, x := range strings.Split(format_founds[1], ",") {
@@ -95,6 +100,16 @@ func doFix(c *cli.Context) {
 			qual = records[5]
 		}
 
+		// > 7. FILTER - filter status: PASS if this position has passed all filters, i.e. a call is made at this position.
+		// > ... If filters have not been applied, then this field should be set to the missing value.
+		// > (String, no white-space or semi-colons permitted)
+		var filter string
+		if arg_remove_filter {
+			filter = "."
+		} else {
+			filter = records[6]
+		}
+
 		var info string
 		if arg_remove_info {
 			info = "."
@@ -120,7 +135,7 @@ func doFix(c *cli.Context) {
 		result = append(result, chrom)
 		result = append(result, records[1:5]...)
 		result = append(result, qual)
-		result = append(result, records[6:7]...)
+		result = append(result, filter)
 		result = append(result, info)
 		result = append(result, format)
 		result = append(result, genotypes...)
