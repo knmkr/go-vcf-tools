@@ -134,6 +134,10 @@ var commandFix = cli.Command{
 			Usage: "Remove 'chr' strings from vcf CHROM records and output only chromosome codes. E.g. 'chr1' will be outputed as '1'.",
 		},
 		cli.BoolFlag{
+			Name:  "remove-qual",
+			Usage: "Remove 'QUAL' field records and output as '.'.",
+		},
+		cli.BoolFlag{
 			Name:  "remove-info",
 			Usage: "Remove 'INFO' field records and output as '.'.",
 		},

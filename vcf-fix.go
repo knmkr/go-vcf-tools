@@ -14,6 +14,7 @@ import (
 
 func doFix(c *cli.Context) {
 	arg_remove_chr_string := c.Bool("remove-chr-string")
+	arg_remove_qual := c.Bool("remove-qual")
 	arg_remove_info := c.Bool("remove-info")
 	arg_keep_gt_only := c.Bool("keep-only-gt")
 
@@ -70,6 +71,10 @@ func doFix(c *cli.Context) {
 	}
 
 	// Parse body lines
+
+	// > 1.4.1 Fixed fields
+	// > There are 8 fixed fields per record. All data lines are tab-delimited.
+	// > In all cases, missing values are specified with a dot ('.').
 	line, err = lib.Readln(reader)
 	for err == nil {
 		records := strings.Split(line, "\t")
@@ -79,6 +84,15 @@ func doFix(c *cli.Context) {
 			chrom = strings.Replace(records[0], "chr", "", 1)
 		} else {
 			chrom = records[0]
+		}
+
+		// > 6. QUAL - quality: Phred-scaled quality score for the assertion made in ALT.
+		// > ... If unknown, the missing value should be specified. (Numeric)
+		var qual string
+		if arg_remove_qual {
+			qual = "."
+		} else {
+			qual = records[5]
 		}
 
 		var info string
@@ -104,7 +118,9 @@ func doFix(c *cli.Context) {
 
 		result := []string{}
 		result = append(result, chrom)
-		result = append(result, records[1:7]...)
+		result = append(result, records[1:5]...)
+		result = append(result, qual)
+		result = append(result, records[6:7]...)
 		result = append(result, info)
 		result = append(result, format)
 		result = append(result, genotypes...)
