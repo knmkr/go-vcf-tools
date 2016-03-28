@@ -20,50 +20,37 @@ func doFix(c *cli.Context) {
 	// Parse header lines
 	reader := bufio.NewReaderSize(os.Stdin, 128*1024)
 
-	contig_fields_pattern := regexp.MustCompile(`##contig=<(.+)>`)
-	info_fields_pattern := regexp.MustCompile(`##INFO=<(.+)>`)
-	format_fields_pattern := regexp.MustCompile(`##FORMAT=<(.+)>`)
+	contig_pattern := regexp.MustCompile(`##contig=<(.+)>`)
+	info_pattern := regexp.MustCompile(`##INFO=<(.+)>`)
+	format_pattern := regexp.MustCompile(`##FORMAT=<(.+)>`)
 
 	line, err := lib.Readln(reader)
 	for err == nil {
 		if strings.HasPrefix(line, "##") {
+			contig_founds := contig_pattern.FindStringSubmatch(line)
+			info_founds := info_pattern.FindStringSubmatch(line)
+			format_founds := format_pattern.FindStringSubmatch(line)
 
-			if arg_remove_chr_string {
-				// Remove 'chr' from contig fields in header
-				contig_field_founds := contig_fields_pattern.FindStringSubmatch(line)
-				if contig_field_founds != nil {
-					contig_field := contig_field_founds[1]
-					result := []string{}
-					for _, x := range strings.Split(contig_field, ",") {
-						if strings.HasPrefix(x, "ID") {
-							result = append(result, strings.Replace(x, "chr", "", 1))
-						} else {
-							result = append(result, x)
-						}
+			if arg_remove_chr_string && contig_founds != nil {
+				// Remove 'chr' from contig meta-infos in header
+				result := []string{}
+				for _, x := range strings.Split(contig_founds[1], ",") {
+					if strings.HasPrefix(x, "ID") {
+						result = append(result, strings.Replace(x, "chr", "", 1))
+					} else {
+						result = append(result, x)
 					}
-					fmt.Println("##contig=<" + strings.Join(result, ",") + ">")
-				} else {
-					fmt.Println(line)
 				}
-			} else if arg_remove_info {
-				// Skip INFO fields
-				info_field_founds := info_fields_pattern.FindStringSubmatch(line)
-				if info_field_founds == nil {
-					fmt.Println(line)
-				}
-			} else if arg_keep_gt_only {
-				// Skip FORMAT field tags except GT
-				format_field_founds := format_fields_pattern.FindStringSubmatch(line)
-				if format_field_founds != nil {
-					format_field := format_field_founds[1]
-					for _, x := range strings.Split(format_field, ",") {
-						if x == "ID=GT" {
-							fmt.Println(line)
-							continue
-						}
+				fmt.Println("##contig=<" + strings.Join(result, ",") + ">")
+			} else if arg_remove_info && info_founds != nil {
+				// Skip INFO meta-info
+			} else if arg_keep_gt_only && format_founds != nil {
+				// Skip FORMAT meta-info tags except GT
+				for _, x := range strings.Split(format_founds[1], ",") {
+					if x == "ID=GT" {
+						fmt.Println(line)
+						continue
 					}
-				} else {
-					fmt.Println(line)
 				}
 			} else {
 				fmt.Println(line)
