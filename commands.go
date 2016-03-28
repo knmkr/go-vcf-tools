@@ -137,5 +137,9 @@ var commandFix = cli.Command{
 			Name:  "remove-info",
 			Usage: "Remove 'INFO' field records and output as '.'.",
 		},
+		cli.BoolFlag{
+			Name:  "keep-only-gt",
+			Usage: "Keep only `GT` (Genotype) field records and remove other records defined in `FORMAT` fields.",
+		},
 	},
 }
